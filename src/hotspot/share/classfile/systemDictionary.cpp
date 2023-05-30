@@ -645,6 +645,7 @@ InstanceKlass* SystemDictionary::resolve_instance_class_or_null(Symbol* name,
          super_load_in_progress = true;
          superclassname = placeholder->supername();
          assert(superclassname != NULL, "superclass has to have a name");
+         superclassname->increment_refcount(); // Keep alive while loading in parallel thread.
       }
     }
   }
@@ -656,6 +657,11 @@ InstanceKlass* SystemDictionary::resolve_instance_class_or_null(Symbol* name,
                                class_loader,
                                protection_domain,
                                CHECK_NULL);
+
+    // This was the last use of the superclassname
+    if (superclassname != NULL) {
+      superclassname->decrement_refcount();
+    }
   }
 
   bool throw_circularity_error = false;
