@@ -44,69 +44,74 @@ TEST_VM(PlaceholderTable, supername) {
   Symbol* super = SymbolTable::new_symbol("super2_8_2023_supername");
   TempNewSymbol interf = SymbolTable::new_symbol("interface2_8_2023_supername");
 
+  unsigned int A_hash = A->identity_hash();
+  unsigned int D_hash = D->identity_hash();
+
+  PlaceholderTable* table = new PlaceholderTable(31);
+
   ClassLoaderData* loader_data = ClassLoaderData::the_null_class_loader_data();
 
   {
     MutexLocker ml(THREAD, SystemDictionary_lock);
 
-    PlaceholderTable::classloadAction super_action = PlaceholderTable::LOAD_SUPER;
-    PlaceholderTable::classloadAction define_action = PlaceholderTable::DEFINE_CLASS;
+    PlaceholderTable::classloadAction super_action = table->LOAD_SUPER;
+    PlaceholderTable::classloadAction define_action = table->DEFINE_CLASS;
 
     // DefineClass A and D
-    PlaceholderTable::find_and_add(A, loader_data, define_action, nullptr, THREAD);
-    PlaceholderTable::find_and_add(D, loader_data, define_action, nullptr, T2);
+    table->find_and_add(A_hash, A, loader_data, define_action, nullptr, THREAD);
+    table->find_and_add(D_hash, D, loader_data, define_action, nullptr, T2);
 
     // Load interfaces first to get supername replaced
-    PlaceholderTable::find_and_add(A, loader_data, super_action, interf, THREAD);
-    PlaceholderTable::find_and_remove(A, loader_data, super_action, THREAD);
+    table->find_and_add(A_hash, A, loader_data, super_action, interf, THREAD);
+    table->find_and_remove(A_hash, A, loader_data, super_action, THREAD);
 
-    PlaceholderTable::find_and_add(D, loader_data, super_action, interf, T2);
-    PlaceholderTable::find_and_remove(D, loader_data, super_action, T2);
+    table->find_and_add(D_hash, D, loader_data, super_action, interf, T2);
+    table->find_and_remove(D_hash, D, loader_data, super_action, T2);
 
     ASSERT_EQ(interf->refcount(), 3) << "supername isn't replaced until super set";
 
     // Add placeholder to the table for loading A and super, and D also loading super
-    PlaceholderTable::find_and_add(A, loader_data, super_action, super, THREAD);
-    PlaceholderTable::find_and_add(D, loader_data, super_action, super, T2);
+    table->find_and_add(A_hash, A, loader_data, super_action, super, THREAD);
+    table->find_and_add(D_hash, D, loader_data, super_action, super, T2);
 
     ASSERT_EQ(interf->refcount(), 1) << "now should be one";
 
     // Another thread comes in and finds A loading Super
-    PlaceholderEntry* placeholder = PlaceholderTable::get_entry(A, loader_data);
+    PlaceholderEntry* placeholder = table->get_entry(A_hash, A, loader_data);
     Symbol* supername = placeholder->supername();
     supername->increment_refcount();
 
     // Other thread is done before handle_parallel_super_load
-    PlaceholderTable::find_and_remove(A, loader_data, super_action, THREAD);
+    table->find_and_remove(A_hash, A, loader_data, super_action, THREAD);
 
     // if THREAD drops reference to supername (loading failed or class unloaded), we're left with
     // a supername without refcount
     super->decrement_refcount();
 
     // handle_parallel_super_load (same thread doesn't assert)
-    PlaceholderTable::find_and_add(A, loader_data, super_action, supername, T2);
+    table->find_and_add(A_hash, A, loader_data, super_action, supername, T2);
 
     // Refcount should be 3: one in table for class A, one in table for class D
     // and one locally with SymbolHandle keeping it alive
-    placeholder = PlaceholderTable::get_entry(A, loader_data);
+    placeholder = table->get_entry(A_hash, A, loader_data);
     supername->decrement_refcount();
     supername = placeholder->supername();
     supername->increment_refcount();
     EXPECT_EQ(super->refcount(), 3) << "super class name refcount should be 3";
 
     // Second thread's done too
-    PlaceholderTable::find_and_remove(D, loader_data, super_action, T2);
+    table->find_and_remove(D_hash, D, loader_data, super_action, T2);
 
     // Other threads are done.
-    PlaceholderTable::find_and_remove(A, loader_data, super_action, THREAD);
+    table->find_and_remove(A_hash, A, loader_data, super_action, THREAD);
 
     // Remove A and D define_class placeholder
-    PlaceholderTable::find_and_remove(A, loader_data, define_action, THREAD);
-    PlaceholderTable::find_and_remove(D, loader_data, define_action, T2);
+    table->find_and_remove(A_hash, A, loader_data, define_action, THREAD);
+    table->find_and_remove(D_hash, D, loader_data, define_action, T2);
 
-    placeholder = PlaceholderTable::get_entry(A, loader_data);
+    placeholder = table->get_entry(A_hash, A, loader_data);
     ASSERT_TRUE(placeholder == nullptr) << "placeholder should be removed";
-    placeholder = PlaceholderTable::get_entry(D, loader_data);
+    placeholder = table->get_entry(D_hash, D, loader_data);
     ASSERT_TRUE(placeholder == nullptr) << "placeholder should be removed";
 
     EXPECT_EQ(super->refcount(), 1) << "super class name refcount should be 1 - kept alive in this scope";
