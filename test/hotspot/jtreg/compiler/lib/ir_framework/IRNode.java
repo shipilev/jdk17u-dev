@@ -142,6 +142,8 @@ public class IRNode {
     public static final String MUL_L = START + "MulL" + MID + END;
     public static final String POPCOUNT_L = START + "PopCountL" + MID + END;
 
+    public static final String NOP = START + "NOP" + MID + END;
+
     public static final String FAST_LOCK   = START + "FastLock" + MID + END;
     public static final String FAST_UNLOCK = START + "FastUnlock" + MID + END;
 
