@@ -199,6 +199,13 @@ bool InlineCacheBuffer::is_empty() {
   return buffer()->number_of_stubs() == 0;
 }
 
+bool InlineCacheBuffer::should_clean() {
+  if (UseNewCode) {
+    return buffer()->number_of_stubs() * 2 > (int)InlineCacheBufferSize;
+  } else {
+    return buffer()->number_of_stubs() > 0;
+  }
+}
 
 void InlineCacheBuffer_init() {
   InlineCacheBuffer::initialize();

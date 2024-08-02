@@ -171,6 +171,7 @@ class InlineCacheBuffer: public AllStatic {
 
   // for debugging
   static bool is_empty();
+  static bool should_clean();
 
   static void release_pending_icholders();
   static void queue_for_release(CompiledICHolder* icholder);
