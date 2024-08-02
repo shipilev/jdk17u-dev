@@ -500,9 +500,18 @@ void SafepointSynchronize::end() {
 
 bool SafepointSynchronize::is_cleanup_needed() {
   // Need a safepoint if some inline cache buffers is non-empty
-  if (!InlineCacheBuffer::is_empty()) return true;
-  if (StringTable::needs_rehashing()) return true;
-  if (SymbolTable::needs_rehashing()) return true;
+  if (!InlineCacheBuffer::is_empty()) {
+    log_info(safepoint)("Safepoint cleanup is needed: InlineCacheBuffer is not empty");
+    return true;
+  }
+  if (StringTable::needs_rehashing()) {
+    log_info(safepoint)("Safepoint cleanup is needed: String table needs rehashing");
+    return true;
+  }
+  if (SymbolTable::needs_rehashing()) {
+    log_info(safepoint)("Safepoint cleanup is needed: Symbol table needs rehashing");
+    return true;
+  }
   return false;
 }
 

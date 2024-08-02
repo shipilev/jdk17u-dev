@@ -84,8 +84,11 @@ static ICRefillVerifier* current_ic_refill_verifier() {
 void ICStub::finalize() {
   if (!is_empty()) {
     ResourceMark rm;
-    CompiledIC *ic = CompiledIC_at(CodeCache::find_compiled(ic_site()), ic_site());
+    CompiledMethod* cm = CodeCache::find_compiled(ic_site());
+    CompiledIC *ic = CompiledIC_at(cm, ic_site());
     assert(CodeCache::find_compiled(ic->instruction_address()) != NULL, "inline cache in non-compiled?");
+
+    log_info(safepoint)("Finalizing IC stub from " PTR_FORMAT " in %s", p2i(ic_site()), cm->method()->name_and_sig_as_C_string());
 
     assert(this == ICStub_from_destination_address(ic->stub_address()), "wrong owner of ic buffer");
     ic->set_ic_destination_and_value(destination(), cached_value());

@@ -104,6 +104,7 @@ public:
   static bool needs_rehashing() { return _needs_rehashing; }
   static inline void update_needs_rehash(bool rehash) {
     if (rehash) {
+      log_info(safepoint)("StringTable asks for rehash; load factor %.f", get_load_factor());
       _needs_rehashing = true;
     }
   }
