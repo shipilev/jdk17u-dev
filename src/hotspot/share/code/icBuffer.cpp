@@ -179,12 +179,15 @@ bool InlineCacheBuffer::needs_update_inline_caches() {
 }
 
 void InlineCacheBuffer::update_inline_caches() {
-  if (buffer()->number_of_stubs() > 0) {
-    log_info(safepoint)("Removing %d IC stubs", buffer()->number_of_stubs());
+  int num = buffer()->number_of_stubs();
+  if (num > 0) {
+    jlong time1 = os::javaTimeNanos();
     if (TraceICBuffer) {
-      tty->print_cr("[updating inline caches with %d stubs]", buffer()->number_of_stubs());
+      tty->print_cr("[updating inline caches with %d stubs]", num);
     }
     buffer()->remove_all();
+    jlong time2 = os::javaTimeNanos();
+    log_info(safepoint)("Removed %d IC stubs in " JLONG_FORMAT " ns", num, time2 - time1);
   }
   release_pending_icholders();
 }
@@ -201,7 +204,7 @@ bool InlineCacheBuffer::is_empty() {
 
 bool InlineCacheBuffer::should_clean() {
   if (UseNewCode) {
-    return buffer()->number_of_stubs() * 2 > (int)InlineCacheBufferSize;
+    return buffer()->number_of_stubs() > 40;
   } else {
     return buffer()->number_of_stubs() > 0;
   }
