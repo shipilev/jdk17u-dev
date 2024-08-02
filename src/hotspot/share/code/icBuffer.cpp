@@ -180,6 +180,7 @@ bool InlineCacheBuffer::needs_update_inline_caches() {
 
 void InlineCacheBuffer::update_inline_caches() {
   if (buffer()->number_of_stubs() > 0) {
+    log_info(safepoint)("Removing %d IC stubs", buffer()->number_of_stubs());
     if (TraceICBuffer) {
       tty->print_cr("[updating inline caches with %d stubs]", buffer()->number_of_stubs());
     }
